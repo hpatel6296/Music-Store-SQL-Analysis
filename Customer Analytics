@@ -1,0 +1,32 @@
+WITH CustomerStats AS (
+    -- Step 1: Aggregate sales and date data per customer
+    SELECT 
+        c.customer_id,
+        CONCAT(c.first_name, ' ', c.last_name) AS full_name,
+        c.country,
+        SUM(i.total) AS total_lifetime_spend,
+        COUNT(i.invoice_id) AS total_orders,
+        MAX(i.invoice_date) AS last_purchase_date
+    FROM customer c
+    LEFT JOIN invoice i ON c.customer_id = i.customer_id
+    GROUP BY c.customer_id, c.first_name, c.last_name, c.country
+)
+SELECT 
+    full_name,
+    country,
+    total_lifetime_spend,
+    total_orders,
+    last_purchase_date,
+    -- Analysis 1: Repeat vs One-Time
+    CASE 
+        WHEN total_orders > 1 THEN 'Repeat Purchaser'
+        ELSE 'One-Time Purchaser'
+    END AS purchase_behavior,
+    -- Analysis 2: Inactivity Check (6 Months)
+    -- Using STR_TO_DATE if your 'invoice_date' is stored as TEXT as shown in your image
+    CASE 
+        WHEN STR_TO_DATE(last_purchase_date, '%Y-%m-%d %H:%i:%s') < DATE_SUB(CURDATE(), INTERVAL 6 MONTH) THEN 'Inactive'
+        ELSE 'Active'
+    END AS activity_status
+FROM CustomerStats
+ORDER BY total_lifetime_spend DESC;
