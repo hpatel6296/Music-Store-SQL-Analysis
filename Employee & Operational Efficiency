@@ -1,0 +1,14 @@
+SELECT 
+    ar.name AS Artist_Name,
+    g.name AS Genre_Name,
+    i.billing_country AS Country,
+    il.unit_price * il.quantity AS Revenue,
+    il.quantity AS Tracks_Sold,
+    al.title AS Album_Title,
+    t.name AS Track_Name
+FROM invoice i
+JOIN invoice_line il ON i.invoice_id = il.invoice_id
+JOIN track t ON il.track_id = t.track_id
+JOIN genre g ON t.genre_id = g.genre_id
+JOIN album al ON t.album_id = al.album_id
+JOIN artist ar ON al.artist_id = ar.artist_id;
