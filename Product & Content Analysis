@@ -1,0 +1,20 @@
+SELECT 
+    t.track_id,
+    t.name AS track_name,
+    al.title AS album_title,
+    g.name AS genre_name,
+    t.unit_price,
+    -- Count how many times this specific track was bought
+    COUNT(il.invoice_line_id) AS times_purchased,
+    -- Total revenue for this track
+    SUM(IFNULL(il.unit_price * il.quantity, 0)) AS track_revenue,
+    -- Analysis 1: Identify Unpurchased items
+    CASE 
+        WHEN COUNT(il.invoice_line_id) = 0 THEN 'Never Purchased'
+        ELSE 'Purchased'
+    END AS inventory_status
+FROM track t
+JOIN genre g ON t.genre_id = g.genre_id
+JOIN album al ON t.album_id = al.album_id
+LEFT JOIN invoice_line il ON t.track_id = il.track_id
+GROUP BY t.track_id, t.name, al.title, g.name, t.unit_price;
