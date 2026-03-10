@@ -1,0 +1,20 @@
+SELECT 
+    c.country,
+    c.city,
+    COUNT(DISTINCT c.customer_id) AS total_customers,
+    SUM(i.total) AS total_revenue,
+    -- Analysis 1: Revenue per Customer (Value of the region)
+    SUM(i.total) / COUNT(DISTINCT c.customer_id) AS avg_revenue_per_customer,
+    -- Analysis 2: Identifying "Underserved" areas
+    -- (High customer count but low average spend)
+    CASE 
+        WHEN COUNT(DISTINCT c.customer_id) > 2 AND (SUM(i.total) / COUNT(DISTINCT c.customer_id)) < 7.00 
+        THEN 'Underserved/High Potential'
+        WHEN SUM(i.total) / COUNT(DISTINCT c.customer_id) > 10.00 
+        THEN 'High-Value Market'
+        ELSE 'Standard Market'
+    END AS regional_priority
+FROM customer c
+JOIN invoice i ON c.customer_id = i.customer_id
+GROUP BY c.country, c.city
+ORDER BY total_revenue DESC;
