@@ -1,0 +1,45 @@
+WITH CustomerPurchases AS (
+    -- Step 1: Get all invoices with their dates and genre counts
+    SELECT 
+        i.customer_id,
+        i.invoice_id,
+        STR_TO_DATE(i.invoice_date, '%Y-%m-%d %H:%i:%s') AS invoice_date,
+        COUNT(DISTINCT t.genre_id) AS genres_in_invoice
+    FROM invoice i
+    JOIN invoice_line il ON i.invoice_id = il.invoice_id
+    JOIN track t ON il.track_id = t.track_id
+    GROUP BY i.customer_id, i.invoice_id, i.invoice_date
+),
+CustomerLapse AS (
+    -- Step 2: Calculate the days between current and previous purchase
+    SELECT 
+        customer_id,
+        invoice_id,
+        invoice_date,
+        LAG(invoice_date) OVER (PARTITION BY customer_id ORDER BY invoice_date) AS prev_purchase_date,
+        genres_in_invoice
+    FROM CustomerPurchases
+),
+GenreStats AS (
+    -- Step 3: Count total unique genres across all time per customer
+    SELECT 
+        c.customer_id,
+        COUNT(DISTINCT t.genre_id) AS total_unique_genres,
+        COUNT(i.invoice_id) AS total_invoices
+    FROM customer c
+    JOIN invoice i ON c.customer_id = i.customer_id
+    JOIN invoice_line il ON i.invoice_id = il.invoice_id
+    JOIN track t ON il.track_id = t.track_id
+    GROUP BY c.customer_id
+)
+SELECT 
+    gs.customer_id,
+    gs.total_invoices AS purchase_frequency,
+    gs.total_unique_genres,
+    -- Analysis 1: Cross-Genre Buyer Flag
+    CASE WHEN gs.total_unique_genres > 1 THEN 'Multi-Genre Buyer' ELSE 'Single-Genre Loyal' END AS buyer_type,
+    -- Analysis 2: Average Days Between Purchases
+    AVG(DATEDIFF(cl.invoice_date, cl.prev_purchase_date)) AS avg_days_between_orders
+FROM GenreStats gs
+JOIN CustomerLapse cl ON gs.customer_id = cl.customer_id
+GROUP BY gs.customer_id, gs.total_invoices, gs.total_unique_genres;
