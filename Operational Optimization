@@ -1,0 +1,13 @@
+SELECT 
+    il.invoice_id,
+    t.name AS track_name,
+    mt.name AS media_type_name,
+    t.unit_price,
+    i.total AS invoice_total,
+    STR_TO_DATE(i.invoice_date, '%Y-%m-%d %H:%i:%s') AS sale_date,
+    -- Extracting year for trend analysis
+    YEAR(STR_TO_DATE(i.invoice_date, '%Y-%m-%d %H:%i:%s')) AS sale_year
+FROM invoice_line il
+JOIN invoice i ON il.invoice_id = i.invoice_id
+JOIN track t ON il.track_id = t.track_id
+JOIN media_type mt ON t.media_type_id = mt.media_type_id;
